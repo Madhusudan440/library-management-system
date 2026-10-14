@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import dotenv from 'dotenv';
 import {
   initialBooks,
@@ -26,7 +27,8 @@ export const isLiveSupabase = Boolean(
 
 export const supabase = isLiveSupabase
   ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { transport: WebSocket },
     })
   : null;
 
