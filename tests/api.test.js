@@ -141,6 +141,74 @@ async function runTests() {
       assert.strictEqual(data.user.role, 'admin');
     });
 
+    // 3e. Student Password Login (No OTP required for routine login)
+    await test('Student Password Login authenticates directly with email and password without OTP', async () => {
+      const res = await fetch(`${baseUrl}/auth/student-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'rahul.cse@cloudlib.edu',
+          password: 'student123',
+        }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.user.role, 'student');
+      assert.ok(data.user.full_name.includes('Rahul'));
+    });
+
+    // 3f. Forgot Password: Send OTP to email
+    let resetOtpCode = '';
+    await test('Forgot Password sends 6-digit verification code to registered email', async () => {
+      const res = await fetch(`${baseUrl}/auth/forgot-password/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'rahul.cse@cloudlib.edu',
+        }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.demoOtp.length, 6);
+      resetOtpCode = data.demoOtp;
+    });
+
+    // 3g. Forgot Password: Reset password using OTP
+    const updatedTestPassword = 'NewSecretPass@2026';
+    await test('Forgot Password resets user password when valid OTP is provided', async () => {
+      const res = await fetch(`${baseUrl}/auth/forgot-password/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'rahul.cse@cloudlib.edu',
+          otp: resetOtpCode,
+          newPassword: updatedTestPassword,
+        }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.ok(data.message.includes('Password reset successfully'));
+    });
+
+    // 3h. Login with the newly reset password
+    await test('User can immediately log in with the new password after OTP reset', async () => {
+      const res = await fetch(`${baseUrl}/auth/student-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'rahul.cse@cloudlib.edu',
+          password: updatedTestPassword,
+        }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.user.role, 'student');
+    });
+
     // 4. Role Authorization Guard (student cannot add books)
     await test('Role Guard: Student role cannot create book records (403 Forbidden)', async () => {
       const res = await fetch(`${baseUrl}/books`, {

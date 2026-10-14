@@ -138,6 +138,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const forgotPasswordSendOtp = async (email) => {
+    setError(null);
+    try {
+      const res = await api.forgotPasswordSendOtp(email);
+      return res;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const forgotPasswordReset = async ({ email, otp, newPassword }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.forgotPasswordReset({ email, otp, newPassword });
+      return res;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await api.logout();
@@ -171,6 +196,8 @@ export const AuthProvider = ({ children }) => {
         loginWithOtp,
         adminLogin,
         studentPasswordLogin,
+        forgotPasswordSendOtp,
+        forgotPasswordReset,
         switchRole,
         logout,
         refreshProfile: fetchProfile,

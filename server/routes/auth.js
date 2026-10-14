@@ -199,8 +199,12 @@ router.post('/admin-login', async (req, res) => {
     (p) => (p.role === 'admin' || p.role === 'librarian') && (p.email.toLowerCase() === cleanEmail || cleanEmail.includes('admin'))
   ) || inMemoryDb.profiles.find((p) => p.role === 'admin');
 
-  // Verify password (default 'admin123' or any 6+ chars in demo mode)
-  if (password === 'admin123' || password === 'admin' || password.length >= 6) {
+  // Verify password: check user's customized password or default passwords
+  const isPasswordValid = adminProfile.password
+    ? adminProfile.password === password
+    : (password === 'Madhu@123' || password === 'admin123' || password === 'admin' || password.length >= 6);
+
+  if (isPasswordValid) {
     inMemoryDb.currentDemoUser = adminProfile;
     inMemoryDb.logAudit(adminProfile.id, adminProfile.email, 'ADMIN_LOGIN', 'auth', adminProfile.id, {
       method: 'PASSWORD',
@@ -215,10 +219,10 @@ router.post('/admin-login', async (req, res) => {
     });
   }
 
-  return res.status(401).json({ success: false, message: 'Invalid admin credentials. (Demo password: admin123)' });
+  return res.status(401).json({ success: false, message: 'Invalid admin credentials. (Default password: Madhu@123 or admin123)' });
 });
 
-// 4. Student Password Login (Alternative to OTP)
+// 4. Student Password Login (Direct login without OTP)
 router.post('/student-login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -228,7 +232,16 @@ router.post('/student-login', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const student = await findProfileByEmail(cleanEmail) || inMemoryDb.profiles.find((p) => p.role === 'student');
 
-  if (password === 'student123' || password === 'student' || password.length >= 6) {
+  if (!student) {
+    return res.status(404).json({ success: false, message: 'Student account not found with this email.' });
+  }
+
+  // Verify password: check user's customized password or default demo passwords
+  const isPasswordValid = student.password
+    ? student.password === password
+    : (password === 'student123' || password === 'student' || password === 'Student@123' || password === 'Madhu@123' || password.length >= 6);
+
+  if (isPasswordValid) {
     inMemoryDb.currentDemoUser = student;
     inMemoryDb.logAudit(student.id, student.email, 'STUDENT_PASSWORD_LOGIN', 'auth', student.id, {
       method: 'PASSWORD',
@@ -243,7 +256,103 @@ router.post('/student-login', async (req, res) => {
     });
   }
 
-  return res.status(401).json({ success: false, message: 'Invalid credentials. (Demo password: student123 or use OTP)' });
+  return res.status(401).json({ success: false, message: 'Invalid student password. (Default password: student123)' });
+});
+
+// In-Memory store for Password Reset OTPs
+const resetOtpStore = new Map();
+
+// 4a. Forgot Password: Send OTP to User Email
+router.post('/forgot-password/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const profile = await findProfileByEmail(cleanEmail);
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  resetOtpStore.set(cleanEmail, { otp, expiresAt, attempts: 0 });
+
+  res.json({
+    success: true,
+    message: `Password reset verification code sent to ${cleanEmail}. Valid for 10 minutes.`,
+    email: cleanEmail,
+    demoOtp: otp, // Visual helper for demo and evaluation
+    userExists: Boolean(profile),
+  });
+});
+
+// 4b. Forgot Password: Verify OTP and Set New Password
+router.post('/forgot-password/reset', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const record = resetOtpStore.get(cleanEmail);
+
+  if (!record) {
+    return res.status(400).json({ success: false, message: 'No password reset requested for this email, or code expired. Please request a new OTP.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    resetOtpStore.delete(cleanEmail);
+    return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+  }
+
+  if (record.otp !== otp.trim()) {
+    record.attempts += 1;
+    if (record.attempts >= 5) {
+      resetOtpStore.delete(cleanEmail);
+      return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please request a new OTP.' });
+    }
+    return res.status(400).json({ success: false, message: 'Incorrect OTP code. Please check and try again.' });
+  }
+
+  // OTP verified! Clear from store
+  resetOtpStore.delete(cleanEmail);
+
+  // Update password in inMemory store
+  let profile = await findProfileByEmail(cleanEmail);
+  if (profile) {
+    profile.password = newPassword;
+  } else {
+    // Also update any matching admin or student
+    const matchedProfile = inMemoryDb.profiles.find((p) => p.email.toLowerCase() === cleanEmail);
+    if (matchedProfile) {
+      matchedProfile.password = newPassword;
+    }
+  }
+
+  // If live Supabase, log update
+  if (isLiveSupabase) {
+    try {
+      await supabase.from('profiles').update({ updated_at: new Date().toISOString() }).eq('email', cleanEmail);
+    } catch (e) {
+      console.warn('Supabase profile password sync note:', e.message);
+    }
+  }
+
+  inMemoryDb.logAudit(profile ? profile.id : 'user', cleanEmail, 'PASSWORD_RESET_OTP', 'auth', profile ? profile.id : 'profile', {
+    method: 'OTP_RESET',
+    timestamp: new Date().toISOString(),
+  });
+
+  return res.json({
+    success: true,
+    message: 'Password reset successfully! You can now log in with your new password.',
+    email: cleanEmail,
+  });
 });
 
 // 5. Sign Out
