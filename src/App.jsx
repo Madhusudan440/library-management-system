@@ -19,6 +19,7 @@ import { AnalyticsReports } from './pages/reports/AnalyticsReports';
 import { LibrarySettings } from './pages/settings/LibrarySettings';
 import { AuditLogs } from './pages/audit/AuditLogs';
 import { UserProfile } from './pages/profile/UserProfile';
+import { AuthModal } from './components/auth/AuthModal';
 
 function MainApp() {
   const { isAdmin, isStudent } = useAuth();
@@ -111,6 +112,9 @@ function MainApp() {
           {renderContent()}
         </main>
       </div>
+
+      {/* Global Authentication & OTP Modal */}
+      <AuthModal />
     </div>
   );
 }

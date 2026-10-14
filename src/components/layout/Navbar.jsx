@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 export const Navbar = ({ onToggleSidebar, activeTab, setActiveTab }) => {
-  const { user, isAdmin, isStudent, switchRole } = useAuth();
+  const { user, isAdmin, isStudent, switchRole, openAuthModal, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -171,65 +171,87 @@ export const Navbar = ({ onToggleSidebar, activeTab, setActiveTab }) => {
             {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
           </button>
 
-          {/* User Profile Pill */}
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <img
-                src={user?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}
-                alt={user?.full_name}
-                className="w-7 h-7 rounded-lg object-cover ring-2 ring-indigo-500/20"
-              />
-              <div className="hidden sm:block text-left">
-                <span className="block text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[110px]">
-                  {user?.full_name?.split(' ')[0]}
-                </span>
-                <span className="block text-[10px] font-medium text-slate-400 capitalize">
-                  {user?.role}
-                </span>
-              </div>
-            </button>
-
-            {showProfileMenu && (
-              <div
-                className="absolute right-0 mt-3 w-56 glass-card bg-white dark:bg-[#111827] shadow-2xl border border-slate-200 dark:border-slate-800 rounded-2xl p-2 z-50 animate-slide-up"
-                onClick={(e) => e.stopPropagation()}
+          {/* User Profile Pill or Sign In Button */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.full_name}</p>
-                  <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
-                  <p className="text-[10px] text-indigo-500 font-semibold mt-0.5">{user?.student_id || 'ID: ' + user?.role?.toUpperCase()}</p>
+                <img
+                  src={user?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}
+                  alt={user?.full_name}
+                  className="w-7 h-7 rounded-lg object-cover ring-2 ring-indigo-500/20"
+                />
+                <div className="hidden sm:block text-left">
+                  <span className="block text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[110px]">
+                    {user?.full_name?.split(' ')[0]}
+                  </span>
+                  <span className="block text-[10px] font-medium text-slate-400 capitalize">
+                    {user?.role}
+                  </span>
                 </div>
+              </button>
 
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      setActiveTab('user-profile');
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4 text-slate-400" />
-                    Manage Profile & Security
-                  </button>
-                  <div className="md:hidden pt-1 border-t border-slate-100 dark:border-slate-800">
+              {showProfileMenu && (
+                <div
+                  className="absolute right-0 mt-3 w-60 glass-card bg-white dark:bg-[#111827] shadow-2xl border border-slate-200 dark:border-slate-800 rounded-2xl p-2 z-50 animate-slide-up"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.full_name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+                    <p className="text-[10px] text-indigo-500 font-semibold mt-0.5">{user?.student_id || 'ID: ' + user?.role?.toUpperCase()}</p>
+                  </div>
+
+                  <div className="py-1 space-y-0.5">
                     <button
                       onClick={() => {
-                        handleRoleChange(isAdmin ? 'student' : 'admin');
+                        setActiveTab('user-profile');
                         setShowProfileMenu(false);
                       }}
-                      className="w-full text-left px-3 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2"
                     >
-                      <Sparkles className="w-4 h-4" />
-                      Switch to {isAdmin ? 'Student' : 'Admin'} View
+                      <User className="w-4 h-4 text-slate-400" />
+                      Manage Profile & Security
                     </button>
+
+                    <button
+                      onClick={() => {
+                        openAuthModal('student');
+                        setShowProfileMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4 text-indigo-500" />
+                      Switch Account (OTP / Admin)
+                    </button>
+
+                    <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl flex items-center gap-2"
+                      >
+                        <Shield className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => openAuthModal('student')}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-sm shadow-indigo-500/25 transition-all"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Student / Admin Sign In</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

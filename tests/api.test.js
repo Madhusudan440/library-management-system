@@ -71,6 +71,76 @@ async function runTests() {
       assert.strictEqual(data.user.role, 'student');
     });
 
+    // 3a. Student OTP Request & Generation
+    let generatedOtp = '';
+    const newStudentEmail = `test.student.${Date.now()}@university.edu`;
+
+    await test('Student Send OTP generates 6-digit code and detects new student', async () => {
+      const res = await fetch(`${baseUrl}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newStudentEmail }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.isNewStudent, true);
+      assert.strictEqual(data.demoOtp.length, 6);
+      generatedOtp = data.demoOtp;
+    });
+
+    // 3b. Verify OTP with invalid code (Security Check)
+    await test('Invalid OTP code is rejected with 400 Bad Request', async () => {
+      const res = await fetch(`${baseUrl}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newStudentEmail, otp: '000000' }),
+      });
+      assert.strictEqual(res.status, 400);
+      const data = await res.json();
+      assert.strictEqual(data.success, false);
+    });
+
+    // 3c. New Student OTP Registration & Profile Creation
+    await test('New Student OTP Verification provisions profile and issues library card', async () => {
+      const res = await fetch(`${baseUrl}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newStudentEmail,
+          otp: generatedOtp,
+          studentDetails: {
+            full_name: 'Priya Patel',
+            student_id: `2024CSE${Math.floor(100 + Math.random() * 900)}`,
+            department: 'Computer Science & Engineering',
+            phone: '+91 9876543210',
+          },
+        }),
+      });
+      assert.strictEqual(res.status, 201);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.isNewStudent, true);
+      assert.strictEqual(data.user.full_name, 'Priya Patel');
+      assert.strictEqual(data.user.role, 'student');
+    });
+
+    // 3d. Admin Password Login
+    await test('Admin Login authenticates with email and password', async () => {
+      const res = await fetch(`${baseUrl}/auth/admin-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'admin@cloudlib.edu',
+          password: 'admin123',
+        }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.user.role, 'admin');
+    });
+
     // 4. Role Authorization Guard (student cannot add books)
     await test('Role Guard: Student role cannot create book records (403 Forbidden)', async () => {
       const res = await fetch(`${baseUrl}/books`, {

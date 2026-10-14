@@ -37,6 +37,18 @@ export const AuthProvider = ({ children }) => {
     fetchProfile();
   }, []);
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState('student'); // 'student' | 'admin'
+
+  const openAuthModal = (tab = 'student') => {
+    setAuthModalTab(tab);
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
+  };
+
   const switchRole = async (targetRole) => {
     try {
       setLoading(true);
@@ -54,51 +66,92 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  // Student OTP Authentication
+  const sendOtp = async (email) => {
+    setError(null);
     try {
-      setLoading(true);
-      // Determine if logging in as admin or student
-      const role = email.includes('student') || email.includes('rahul') || email.includes('ananya') ? 'student' : 'admin';
-      const res = await api.switchDemoRole(role);
+      const res = await api.sendOtp(email);
+      return res;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const loginWithOtp = async ({ email, otp, studentDetails }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.verifyOtp({ email, otp, studentDetails });
       if (res.success && res.user) {
         setUser(res.user);
-        localStorage.setItem('cloudlib_token', res.user.id);
-        return { success: true };
+        localStorage.setItem('cloudlib_token', res.token || res.user.id);
+        setIsAuthModalOpen(false);
       }
+      return res;
     } catch (err) {
       setError(err.message);
-      return { success: false, message: err.message };
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (userData) => {
+  // Admin Login with Email & Password
+  const adminLogin = async (email, password) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const res = await api.registerStudent(userData);
-      if (res.success && res.student) {
-        setUser(res.student);
-        localStorage.setItem('cloudlib_token', res.student.id);
-        return { success: true };
+      const res = await api.adminLogin({ email, password });
+      if (res.success && res.user) {
+        setUser(res.user);
+        localStorage.setItem('cloudlib_token', res.token || res.user.id);
+        setIsAuthModalOpen(false);
       }
-      return { success: false, message: 'Registration failed.' };
+      return res;
     } catch (err) {
       setError(err.message);
-      return { success: false, message: err.message };
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
+  // Student Password Login
+  const studentPasswordLogin = async (email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.studentLogin({ email, password });
+      if (res.success && res.user) {
+        setUser(res.user);
+        localStorage.setItem('cloudlib_token', res.token || res.user.id);
+        setIsAuthModalOpen(false);
+      }
+      return res;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      // ignore
+    }
     localStorage.removeItem('cloudlib_token');
-    // Switch to student view for demonstration or reset
-    switchRole('student');
+    // Switch to student view or prompt login
+    setUser(null);
+    openAuthModal('student');
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'librarian';
   const isStudent = user?.role === 'student';
+  const isAuthenticated = Boolean(user);
 
   return (
     <AuthContext.Provider
@@ -108,9 +161,16 @@ export const AuthProvider = ({ children }) => {
         error,
         isAdmin,
         isStudent,
+        isAuthenticated,
+        isAuthModalOpen,
+        authModalTab,
+        openAuthModal,
+        closeAuthModal,
+        sendOtp,
+        loginWithOtp,
+        adminLogin,
+        studentPasswordLogin,
         switchRole,
-        login,
-        register,
         logout,
         refreshProfile: fetchProfile,
       }}

@@ -25,8 +25,13 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // Auth
+  // Auth & OTP Authentication
   getProfile: () => request('/auth/profile'),
+  sendOtp: (email) => request('/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyOtp: (payload) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  adminLogin: (credentials) => request('/auth/admin-login', { method: 'POST', body: JSON.stringify(credentials) }),
+  studentLogin: (credentials) => request('/auth/student-login', { method: 'POST', body: JSON.stringify(credentials) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   switchDemoRole: (role) => request('/auth/switch-demo-role', { method: 'POST', body: JSON.stringify({ role }) }),
   updateProfile: (profileData) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
   changePassword: (passwordData) => request('/auth/change-password', { method: 'POST', body: JSON.stringify(passwordData) }),
