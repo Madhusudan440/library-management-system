@@ -302,10 +302,10 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 lg:static w-full h-[100dvh] lg:h-auto lg:min-h-screen flex flex-col justify-between lg:flex-row bg-[#f8fafc] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden lg:overflow-visible">
+    <div className="fixed inset-0 lg:static w-full h-[100dvh] lg:h-auto lg:min-h-screen flex flex-col justify-between lg:flex-row bg-gradient-to-br from-[#1e1b4b] via-[#2e287a] to-[#3730a3] lg:bg-[#f8fafc] lg:dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden lg:overflow-visible">
       
       {/* MOBILE ONLY: Top Header Bar with Image Gradient */}
-      <div className="lg:hidden w-full bg-gradient-to-r from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white px-4 py-2.5 flex items-center justify-between shadow-md shrink-0 z-20">
+      <div className="lg:hidden w-full bg-[#1e1b4b]/90 backdrop-blur-md text-white px-4 py-2.5 flex items-center justify-between border-b border-indigo-400/20 shadow-md shrink-0 z-20">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-inner">
             <GraduationCap className="w-4 h-4 text-indigo-200" />
@@ -394,9 +394,9 @@ export const LoginPage = () => {
       </div>
 
       {/* CENTER / RIGHT COLUMN: Container with Floating SIGN IN Card */}
-      <div className="w-full lg:w-[50%] xl:w-[52%] flex-1 flex flex-col items-center justify-center p-3 sm:p-5 lg:p-14 bg-slate-50 dark:bg-[#0B0F19] overflow-hidden lg:overflow-visible">
+      <div className="w-full lg:w-[50%] xl:w-[52%] flex-1 flex flex-col items-center justify-center p-3 sm:p-5 lg:p-14 bg-gradient-to-br from-[#1e1b4b] via-[#2e287a] to-[#3730a3] lg:bg-slate-50 lg:dark:bg-[#0B0F19] overflow-hidden lg:overflow-visible">
         
-        <div className="w-full max-w-[390px] sm:max-w-[420px] lg:max-w-[440px] bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-4 sm:p-6 lg:p-10 transition-all">
+        <div className="w-full max-w-[390px] sm:max-w-[420px] lg:max-w-[440px] bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl shadow-2xl shadow-indigo-950/60 border border-white/20 lg:border-slate-100 lg:dark:border-slate-800 p-4 sm:p-6 lg:p-10 transition-all">
           
           {/* VIEW MODE 1: REGULAR PASSWORD SIGN IN (Direct Password Login) */}
           {viewMode === 'signin' && (
@@ -821,7 +821,7 @@ export const LoginPage = () => {
       </div>
 
       {/* MOBILE ONLY: Bottom Footer Bar with Image Gradient */}
-      <div className="lg:hidden w-full bg-gradient-to-r from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white px-4 py-2 flex items-center justify-between text-[10px] text-indigo-200/90 border-t border-indigo-400/20 shrink-0 z-20">
+      <div className="lg:hidden w-full bg-[#1e1b4b]/90 backdrop-blur-md text-white px-4 py-2 flex items-center justify-between text-[10px] text-indigo-200/90 border-t border-indigo-400/20 shrink-0 z-20">
         <span>&copy; 2026 Academic Suite</span>
         <span className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] font-mono">Sandbox Instance</span>
       </div>
