@@ -94,30 +94,38 @@ export const LoginPage = () => {
 
   // Handle mobile back button & history trap (preventing site from closing)
   useEffect(() => {
-    // Seed initial history entries so pressing back doesn't close website
-    window.history.replaceState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
-    window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+    try {
+      // Seed initial history entries so pressing back doesn't close website
+      window.history.replaceState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+      window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+    } catch (_) {}
 
     const handlePopState = (e) => {
       if (viewMode === 'forgot-password') {
         setViewMode('signin');
         setErrorMsg('');
         setSuccessMsg('');
-        window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+        try {
+          window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+        } catch (_) {}
       } else {
         // Prevent accidental closing of website on mobile back press
-        window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
-        addToast({
-          type: 'info',
-          title: 'CloudLib Pro',
-          message: 'Sign in to access your library dashboard.',
-        });
+        try {
+          window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+        } catch (_) {}
+        if (addToast) {
+          addToast({
+            type: 'info',
+            title: 'CloudLib Pro',
+            message: 'Sign in to access your library dashboard.',
+          });
+        }
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [viewMode]);
+  }, [viewMode, addToast]);
 
   // Handle Role Tab Switching
   const handleRoleTabChange = (role) => {

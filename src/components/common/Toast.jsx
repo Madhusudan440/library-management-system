@@ -7,13 +7,25 @@ export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((message, type = 'info', duration = 4000) => {
-    const id = Date.now() + Math.random().toString(36).substr(2, 4);
-    setToasts((prev) => [...prev, { id, message, type }]);
+    let msg = message;
+    let t = type;
+    let title = null;
+    let d = duration;
 
-    if (duration > 0) {
+    if (typeof message === 'object' && message !== null) {
+      msg = message.message || message.description || '';
+      t = message.type || 'info';
+      title = message.title || null;
+      if (message.duration) d = message.duration;
+    }
+
+    const id = Date.now() + Math.random().toString(36).substr(2, 4);
+    setToasts((prev) => [...prev, { id, message: String(msg), title, type: t }]);
+
+    if (d > 0) {
       setTimeout(() => {
         removeToast(id);
-      }, duration);
+      }, d);
     }
   }, []);
 
@@ -22,7 +34,16 @@ export const ToastProvider = ({ children }) => {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast: addToast, success: (m) => addToast(m, 'success'), error: (m) => addToast(m, 'error'), info: (m) => addToast(m, 'info'), warning: (m) => addToast(m, 'warning') }}>
+    <ToastContext.Provider
+      value={{
+        addToast,
+        showToast: addToast,
+        success: (m) => addToast(m, 'success'),
+        error: (m) => addToast(m, 'error'),
+        info: (m) => addToast(m, 'info'),
+        warning: (m) => addToast(m, 'warning'),
+      }}
+    >
       {children}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-md w-full px-4 pointer-events-none">
         {toasts.map((toast) => (
@@ -53,10 +74,17 @@ const ToastItem = ({ toast, onClose }) => {
       className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-2xl glass-card bg-white/95 dark:bg-[#111827]/95 shadow-xl border ${borders[toast.type] || borders.info} animate-slide-up`}
     >
       <div className="flex items-center gap-3">
-        {icons[toast.type]}
-        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
-          {toast.message}
-        </p>
+        {icons[toast.type] || icons.info}
+        <div>
+          {toast.title && (
+            <p className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-0.5">
+              {toast.title}
+            </p>
+          )}
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+            {toast.message}
+          </p>
+        </div>
       </div>
       <button
         onClick={onClose}

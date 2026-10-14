@@ -37,6 +37,61 @@ function MainApp() {
     }
   }, [isAdmin, isStudent]);
 
+  // Mobile Back Button and Navigation History Trap
+  React.useEffect(() => {
+    if (!user) return;
+
+    const defaultHomeTab = isAdmin ? 'admin-dashboard' : 'student-dashboard';
+
+    // Read current hash or fallback to home tab
+    const initialHash = window.location.hash.replace('#', '');
+    const startingTab = initialHash || defaultHomeTab;
+    setActiveTab(startingTab);
+
+    try {
+      // Seed initial browser history states to trap immediate exit
+      window.history.replaceState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
+      if (startingTab !== defaultHomeTab) {
+        window.history.pushState({ app: 'cloudlib', tab: startingTab }, '', '#' + startingTab);
+      } else {
+        window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
+      }
+    } catch (_) {}
+
+    const handlePopState = (e) => {
+      // 1. If mobile sidebar is open, close it first and prevent site exit
+      if (sidebarOpen) {
+        setSidebarOpen(false);
+        try {
+          window.history.pushState({ app: 'cloudlib', tab: activeTab }, '', '#' + activeTab);
+        } catch (_) {}
+        return;
+      }
+
+      // 2. If browser state has a recorded tab, navigate to it
+      if (e.state && e.state.tab) {
+        setActiveTab(e.state.tab);
+        setTabAction(e.state.action || null);
+      } else {
+        // If gone back to base, keep user on home dashboard rather than closing website
+        if (activeTab !== defaultHomeTab) {
+          setActiveTab(defaultHomeTab);
+          try {
+            window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
+          } catch (_) {}
+        } else {
+          // Already on home dashboard: maintain history entry to prevent accidental site closure
+          try {
+            window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
+          } catch (_) {}
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user, isAdmin, sidebarOpen, activeTab]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -52,53 +107,6 @@ function MainApp() {
   if (!user) {
     return <LoginPage />;
   }
-
-  // Mobile Back Button and Navigation History Trap
-  React.useEffect(() => {
-    if (!user) return;
-
-    const defaultHomeTab = isAdmin ? 'admin-dashboard' : 'student-dashboard';
-
-    // Read current hash or fallback to home tab
-    const initialHash = window.location.hash.replace('#', '');
-    const startingTab = initialHash || defaultHomeTab;
-    setActiveTab(startingTab);
-
-    // Seed initial browser history states to trap immediate exit
-    window.history.replaceState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
-    if (startingTab !== defaultHomeTab) {
-      window.history.pushState({ app: 'cloudlib', tab: startingTab }, '', '#' + startingTab);
-    } else {
-      window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
-    }
-
-    const handlePopState = (e) => {
-      // 1. If mobile sidebar is open, close it first and prevent site exit
-      if (sidebarOpen) {
-        setSidebarOpen(false);
-        window.history.pushState({ app: 'cloudlib', tab: activeTab }, '', '#' + activeTab);
-        return;
-      }
-
-      // 2. If browser state has a recorded tab, navigate to it
-      if (e.state && e.state.tab) {
-        setActiveTab(e.state.tab);
-        setTabAction(e.state.action || null);
-      } else {
-        // If gone back to base, keep user on home dashboard rather than closing website
-        if (activeTab !== defaultHomeTab) {
-          setActiveTab(defaultHomeTab);
-          window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
-        } else {
-          // Already on home dashboard: maintain history entry to prevent accidental site closure
-          window.history.pushState({ app: 'cloudlib', tab: defaultHomeTab }, '', '#' + defaultHomeTab);
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [user, isAdmin, sidebarOpen, activeTab]);
 
   const handleNavigate = (tab, options = {}) => {
     if (tab !== activeTab) {
