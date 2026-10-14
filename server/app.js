@@ -25,7 +25,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cloud Computing & Microservices Health Check
-app.get('/api/health', (req, res) => {
+const healthHandler = (req, res) => {
   res.json({
     status: 'ONLINE',
     service: 'CloudLib Pro Backend API (Vercel Serverless Compatible)',
@@ -34,19 +34,27 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
-});
+};
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/loans', loanRoutes);
-app.use('/api/reservations', reservationRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/settings', settingRoutes);
-app.use('/api/audit', auditRoutes);
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
+
+// API Routes - registered on both /api/* and /* for full Vercel rewrite compatibility
+const registerRoutes = (prefix = '') => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/books`, bookRoutes);
+  app.use(`${prefix}/categories`, categoryRoutes);
+  app.use(`${prefix}/loans`, loanRoutes);
+  app.use(`${prefix}/reservations`, reservationRoutes);
+  app.use(`${prefix}/students`, studentRoutes);
+  app.use(`${prefix}/notifications`, notificationRoutes);
+  app.use(`${prefix}/analytics`, analyticsRoutes);
+  app.use(`${prefix}/settings`, settingRoutes);
+  app.use(`${prefix}/audit`, auditRoutes);
+};
+
+registerRoutes('/api');
+registerRoutes('');
 
 // 404 Route Handler
 app.use((req, res) => {
