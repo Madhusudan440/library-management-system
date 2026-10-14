@@ -245,9 +245,9 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
-      {/* LEFT COLUMN: Deep Indigo Gradient Feature Panel (Matches Image 1) */}
-      <div className="lg:w-[50%] xl:w-[48%] bg-gradient-to-br from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+    <div className="h-[100dvh] lg:h-auto lg:min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden lg:overflow-visible">
+      {/* LEFT COLUMN: Deep Indigo Gradient Feature Panel (Matches Image 1 - Visible on Laptop/Desktop only) */}
+      <div className="hidden lg:flex lg:w-[50%] xl:w-[48%] bg-gradient-to-br from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white p-8 sm:p-12 lg:p-16 flex-col justify-between relative overflow-hidden shadow-2xl">
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -314,29 +314,45 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Light Minimalist Container with Floating SIGN IN Card */}
-      <div className="lg:w-[50%] xl:w-[52%] flex items-center justify-center p-6 sm:p-10 lg:p-14 bg-slate-50 dark:bg-[#0B0F19]">
-        <div className="w-full max-w-[440px] bg-white dark:bg-[#111827] rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-8 sm:p-10 transition-all">
+      {/* RIGHT COLUMN: Container with Floating SIGN IN Card */}
+      <div className="w-full lg:w-[50%] xl:w-[52%] h-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-14 bg-slate-50 dark:bg-[#0B0F19] overflow-hidden lg:overflow-visible">
+        
+        {/* Mobile Header Branding - Only visible on mobile devices to save vertical space */}
+        <div className="lg:hidden flex items-center justify-center gap-2 mb-2 sm:mb-3 select-none">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
+            <GraduationCap className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <span className="text-sm font-black text-slate-900 dark:text-white tracking-wider uppercase block leading-none">
+              SMART ACADEMIC
+            </span>
+            <span className="text-[10px] font-medium text-slate-400 block -mt-0.5">
+              Cloud Library Management System
+            </span>
+          </div>
+        </div>
+
+        <div className="w-full max-w-[420px] lg:max-w-[440px] bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-5 sm:p-8 lg:p-10 transition-all">
           
           {/* VIEW MODE 1: REGULAR PASSWORD SIGN IN (Direct Password Login) */}
           {viewMode === 'signin' && (
             <>
               {/* Card Header (Image 1: SIGN IN) */}
-              <div className="mb-6">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              <div className="mb-3 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   SIGN IN
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
                   Enter your account credentials to access your dashboard.
                 </p>
               </div>
 
               {/* Role Switching Tabs (Admin / Staff vs Student) */}
-              <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 mb-6 text-xs font-semibold">
+              <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 mb-3 sm:mb-5 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => handleRoleTabChange('admin')}
-                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 sm:py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs ${
                     roleTab === 'admin'
                       ? 'bg-white dark:bg-[#1E293B] text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -348,7 +364,7 @@ export const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => handleRoleTabChange('student')}
-                  className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 sm:py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs ${
                     roleTab === 'student'
                       ? 'bg-white dark:bg-[#1E293B] text-indigo-600 dark:text-indigo-400 shadow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -376,9 +392,9 @@ export const LoginPage = () => {
               )}
 
               {/* Password Login Form (Exact layout of Image 1) */}
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-2.5 sm:space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1 sm:mb-1.5">
                     EMAIL / USERNAME
                   </label>
                   <div className="relative">
@@ -391,14 +407,14 @@ export const LoginPage = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={roleTab === 'admin' ? 'admin@college.com' : 'rahul.cse@cloudlib.edu'}
-                      className="w-full pl-10 pr-4 py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                    <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
                       PASSWORD
                     </label>
                     {/* FORGOT PASSWORD LINK */}
@@ -411,7 +427,7 @@ export const LoginPage = () => {
                         setErrorMsg('');
                         setSuccessMsg('');
                       }}
-                      className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -427,7 +443,7 @@ export const LoginPage = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full pl-10 pr-10 py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all tracking-wider"
+                      className="w-full pl-10 pr-10 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all tracking-wider"
                     />
                     <button
                       type="button"
@@ -443,7 +459,7 @@ export const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full mt-1.5 sm:mt-2 py-2.5 sm:py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -453,15 +469,15 @@ export const LoginPage = () => {
                 </button>
 
                 {/* Sandbox Credentials Box (Exact visual match to Image 1) */}
-                <div className="pt-4">
-                  <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+                <div className="pt-2 sm:pt-4">
+                  <p className="text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mb-1 sm:mb-2">
                     Local sandbox credentials are seeded in database.
                   </p>
                   
                   {roleTab === 'admin' ? (
                     <div
                       onClick={fillSandboxAdmin}
-                      className="rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-400 font-mono flex flex-col gap-1 cursor-pointer hover:border-indigo-400 transition-colors group"
+                      className="rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-mono flex flex-col gap-0.5 sm:gap-1 cursor-pointer hover:border-indigo-400 transition-colors group"
                       title="Click to auto-fill admin credentials"
                     >
                       <div className="flex justify-between items-center">
@@ -480,7 +496,7 @@ export const LoginPage = () => {
                   ) : (
                     <div
                       onClick={fillSandboxStudent}
-                      className="rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-400 font-mono flex flex-col gap-1 cursor-pointer hover:border-indigo-400 transition-colors group"
+                      className="rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-3 text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-mono flex flex-col gap-0.5 sm:gap-1 cursor-pointer hover:border-indigo-400 transition-colors group"
                       title="Click to auto-fill student credentials"
                     >
                       <div className="flex justify-between items-center">
@@ -506,7 +522,7 @@ export const LoginPage = () => {
           {viewMode === 'forgot-password' && (
             <div>
               {/* Header */}
-              <div className="mb-6">
+              <div className="mb-3 sm:mb-6">
                 <button
                   type="button"
                   onClick={() => {
@@ -514,21 +530,21 @@ export const LoginPage = () => {
                     setErrorMsg('');
                     setSuccessMsg('');
                   }}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 mb-2"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 mb-1 sm:mb-2"
                 >
                   &larr; Back to Sign In
                 </button>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   RESET PASSWORD
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
                   Change your password securely via one-time verification code (OTP).
                 </p>
               </div>
 
               {/* Error Banner */}
               {errorMsg && (
-                <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-shake">
+                <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-shake">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{errorMsg}</span>
                 </div>
@@ -536,9 +552,9 @@ export const LoginPage = () => {
 
               {/* STEP 1: Enter Email to Send Reset OTP */}
               {resetStep === 'email' && (
-                <form onSubmit={handleSendResetOtp} className="space-y-4">
+                <form onSubmit={handleSendResetOtp} className="space-y-2.5 sm:space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1.5">
+                    <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1 sm:mb-1.5">
                       REGISTERED ACCOUNT EMAIL
                     </label>
                     <div className="relative">
@@ -551,7 +567,7 @@ export const LoginPage = () => {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         placeholder="e.g. admin@college.com or rahul.cse@cloudlib.edu"
-                        className="w-full pl-10 pr-4 py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -559,7 +575,7 @@ export const LoginPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 sm:py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -571,22 +587,22 @@ export const LoginPage = () => {
                     )}
                   </button>
 
-                  <div className="pt-2">
-                    <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+                  <div className="pt-1.5 sm:pt-2">
+                    <p className="text-center text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 mb-1.5">
                       Need quick test email?
                     </p>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setResetEmail('admin@college.com')}
-                        className="flex-1 py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono hover:border-indigo-400 text-slate-700 dark:text-slate-300"
+                        className="flex-1 py-1 sm:py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] sm:text-[11px] font-mono hover:border-indigo-400 text-slate-700 dark:text-slate-300"
                       >
                         admin@college.com
                       </button>
                       <button
                         type="button"
                         onClick={() => setResetEmail('rahul.cse@cloudlib.edu')}
-                        className="flex-1 py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-mono hover:border-indigo-400 text-slate-700 dark:text-slate-300"
+                        className="flex-1 py-1 sm:py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] sm:text-[11px] font-mono hover:border-indigo-400 text-slate-700 dark:text-slate-300"
                       >
                         rahul.cse@cloudlib.edu
                       </button>
@@ -597,12 +613,12 @@ export const LoginPage = () => {
 
               {/* STEP 2: Verify OTP & Enter New Password */}
               {resetStep === 'otp' && (
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="text-center pb-2">
-                    <span className="inline-block p-2 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-1">
-                      <KeyRound className="w-5 h-5" />
+                <form onSubmit={handleResetPassword} className="space-y-2.5 sm:space-y-4">
+                  <div className="text-center pb-1">
+                    <span className="inline-block p-1.5 sm:p-2 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-0.5">
+                      <KeyRound className="w-4 h-4 sm:w-5 sm:h-5" />
                     </span>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                    <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
                       Enter the 6-digit verification code sent to:
                     </p>
                     <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 font-mono">
@@ -611,7 +627,7 @@ export const LoginPage = () => {
                   </div>
 
                   {/* 6 Digit Inputs */}
-                  <div className="flex justify-center gap-2">
+                  <div className="flex justify-center gap-1.5 sm:gap-2">
                     {otpCode.map((digit, idx) => (
                       <input
                         key={idx}
@@ -622,22 +638,22 @@ export const LoginPage = () => {
                         value={digit}
                         onChange={(e) => handleOtpBoxChange(idx, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        className="w-10 h-11 sm:w-11 sm:h-12 text-center text-lg font-bold bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-9 h-10 sm:w-11 sm:h-12 text-center text-base sm:text-lg font-bold bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white rounded-lg sm:rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     ))}
                   </div>
 
                   {/* Demo OTP Banner for evaluation */}
                   {demoOtp && (
-                    <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between text-[11px] sm:text-xs text-amber-800 dark:text-amber-300">
                       <div className="flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Reset OTP: <strong className="font-mono text-sm">{demoOtp}</strong></span>
+                        <span>Reset OTP: <strong className="font-mono text-xs sm:text-sm">{demoOtp}</strong></span>
                       </div>
                       <button
                         type="button"
                         onClick={fillDemoOtp}
-                        className="px-2 py-1 rounded bg-amber-200 dark:bg-amber-900/80 font-bold hover:bg-amber-300 text-[11px]"
+                        className="px-2 py-0.5 sm:py-1 rounded bg-amber-200 dark:bg-amber-900/80 font-bold hover:bg-amber-300 text-[10px] sm:text-[11px]"
                       >
                         Auto-fill
                       </button>
@@ -645,9 +661,9 @@ export const LoginPage = () => {
                   )}
 
                   {/* New Password Fields */}
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-2 sm:space-y-3 pt-1">
                     <div>
-                      <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-0.5 sm:mb-1">
                         NEW PASSWORD
                       </label>
                       <div className="relative">
@@ -660,7 +676,7 @@ export const LoginPage = () => {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="At least 6 characters"
-                          className="w-full pl-10 pr-10 py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full pl-10 pr-10 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <button
                           type="button"
@@ -673,7 +689,7 @@ export const LoginPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 mb-0.5 sm:mb-1">
                         CONFIRM NEW PASSWORD
                       </label>
                       <div className="relative">
@@ -686,7 +702,7 @@ export const LoginPage = () => {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Re-enter new password"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
@@ -695,7 +711,7 @@ export const LoginPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 sm:py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -708,17 +724,17 @@ export const LoginPage = () => {
                     <button
                       type="button"
                       onClick={() => setResetStep('email')}
-                      className="hover:underline"
+                      className="hover:underline text-[11px] sm:text-xs"
                     >
                       &larr; Change Email
                     </button>
                     {countdown > 0 ? (
-                      <span>Resend code in {countdown}s</span>
+                      <span className="text-[11px] sm:text-xs">Resend in {countdown}s</span>
                     ) : (
                       <button
                         type="button"
                         onClick={handleSendResetOtp}
-                        className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+                        className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline text-[11px] sm:text-xs"
                       >
                         Resend OTP
                       </button>
