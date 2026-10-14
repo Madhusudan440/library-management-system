@@ -57,31 +57,22 @@ export const Navbar = ({ onToggleSidebar, activeTab, setActiveTab }) => {
           </div>
         </div>
 
-        {/* Center: Live Role Switcher (Crucial for Evaluation & Demo) */}
-        <div className="hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-inner">
-          <button
-            onClick={() => handleRoleChange('admin')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-              isAdmin
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            Librarian / Admin
-          </button>
-          <button
-            onClick={() => handleRoleChange('student')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-              isStudent
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            Student View
-          </button>
-        </div>
+        {/* Center: Active Authenticated Portal Badge */}
+        {user && (
+          <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm">
+            {isAdmin ? (
+              <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                <Shield className="w-3.5 h-3.5" />
+                Librarian & Admin Portal
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
+                <GraduationCap className="w-3.5 h-3.5" />
+                Student Library Portal
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Right Controls: Notifications, Theme Toggle, Profile */}
         <div className="flex items-center gap-2">

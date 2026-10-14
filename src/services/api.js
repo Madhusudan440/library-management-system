@@ -2,7 +2,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('cloudlib_token') || 'user-admin-001';
+  const token = localStorage.getItem('cloudlib_token');
   
   const headers = {
     'Content-Type': 'application/json',

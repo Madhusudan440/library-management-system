@@ -9,25 +9,26 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const fetchProfile = async () => {
+    const token = localStorage.getItem('cloudlib_token');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await api.getProfile();
       if (res.success && res.user) {
         setUser(res.user);
+      } else {
+        localStorage.removeItem('cloudlib_token');
+        setUser(null);
       }
     } catch (err) {
       console.warn('Initial session fetch notice:', err.message);
-      // Fallback demo admin
-      setUser({
-        id: 'user-admin-001',
-        full_name: 'Dr. Sarah Mitchell',
-        email: 'admin@cloudlib.edu',
-        role: 'admin',
-        student_id: 'FAC-LIB-001',
-        department: 'Central Library & Information Science',
-        avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
-        status: 'active',
-      });
+      localStorage.removeItem('cloudlib_token');
+      setUser(null);
     } finally {
       setLoading(false);
     }

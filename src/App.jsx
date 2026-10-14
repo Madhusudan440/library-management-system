@@ -20,9 +20,10 @@ import { LibrarySettings } from './pages/settings/LibrarySettings';
 import { AuditLogs } from './pages/audit/AuditLogs';
 import { UserProfile } from './pages/profile/UserProfile';
 import { AuthModal } from './components/auth/AuthModal';
+import { LoginPage } from './pages/auth/LoginPage';
 
 function MainApp() {
-  const { isAdmin, isStudent } = useAuth();
+  const { user, loading, isAdmin, isStudent } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [tabAction, setTabAction] = useState(null);
@@ -31,10 +32,26 @@ function MainApp() {
   React.useEffect(() => {
     if (isAdmin && activeTab.startsWith('student-')) {
       setActiveTab('admin-dashboard');
-    } else if (isStudent && activeTab.startsWith('admin-')) {
+    } else if (isStudent && (activeTab.startsWith('admin-') || activeTab === 'admin-dashboard')) {
       setActiveTab('student-dashboard');
     }
   }, [isAdmin, isStudent]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-indigo-300 font-medium text-xs tracking-widest uppercase">Connecting to CloudLib Pro...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unauthenticated visitors must login first (matching Image 1)
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const handleNavigate = (tab, options = {}) => {
     setActiveTab(tab);
