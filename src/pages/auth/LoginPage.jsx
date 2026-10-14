@@ -70,6 +70,55 @@ export const LoginPage = () => {
     return () => clearInterval(timer);
   }, [countdown]);
 
+  // Lock body scroll on mobile devices while LoginPage is mounted
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalHeight = document.body.style.height;
+    const originalPosition = document.body.style.position;
+    const originalWidth = document.body.style.width;
+
+    if (window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100dvh';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.height = originalHeight;
+      document.body.style.position = originalPosition;
+      document.body.style.width = originalWidth;
+    };
+  }, []);
+
+  // Handle mobile back button & history trap (preventing site from closing)
+  useEffect(() => {
+    // Seed initial history entries so pressing back doesn't close website
+    window.history.replaceState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+    window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+
+    const handlePopState = (e) => {
+      if (viewMode === 'forgot-password') {
+        setViewMode('signin');
+        setErrorMsg('');
+        setSuccessMsg('');
+        window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+      } else {
+        // Prevent accidental closing of website on mobile back press
+        window.history.pushState({ app: 'cloudlib', page: 'login', view: 'signin' }, '');
+        addToast({
+          type: 'info',
+          title: 'CloudLib Pro',
+          message: 'Sign in to access your library dashboard.',
+        });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [viewMode]);
+
   // Handle Role Tab Switching
   const handleRoleTabChange = (role) => {
     setRoleTab(role);
@@ -245,8 +294,30 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="h-[100dvh] lg:h-auto lg:min-h-screen w-full flex flex-col lg:flex-row bg-[#f8fafc] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden lg:overflow-visible">
-      {/* LEFT COLUMN: Deep Indigo Gradient Feature Panel (Matches Image 1 - Visible on Laptop/Desktop only) */}
+    <div className="fixed inset-0 lg:static w-full h-[100dvh] lg:h-auto lg:min-h-screen flex flex-col justify-between lg:flex-row bg-[#f8fafc] dark:bg-[#0B0F19] text-slate-800 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-hidden lg:overflow-visible">
+      
+      {/* MOBILE ONLY: Top Header Bar with Image Gradient */}
+      <div className="lg:hidden w-full bg-gradient-to-r from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white px-4 py-2.5 flex items-center justify-between shadow-md shrink-0 z-20">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-inner">
+            <GraduationCap className="w-4 h-4 text-indigo-200" />
+          </div>
+          <div>
+            <span className="text-xs font-black tracking-wider uppercase block leading-none text-white">
+              SMART ACADEMIC
+            </span>
+            <span className="text-[9px] text-indigo-200/90 font-medium block">
+              Cloud Library Pro
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/10 border border-white/10 text-[10px] text-indigo-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Live Portal</span>
+        </div>
+      </div>
+
+      {/* DESKTOP ONLY: Left Column Deep Indigo Gradient Feature Panel (Matches Image 1 exactly) */}
       <div className="hidden lg:flex lg:w-[50%] xl:w-[48%] bg-gradient-to-br from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white p-8 sm:p-12 lg:p-16 flex-col justify-between relative overflow-hidden shadow-2xl">
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -314,25 +385,10 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Container with Floating SIGN IN Card */}
-      <div className="w-full lg:w-[50%] xl:w-[52%] h-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-14 bg-slate-50 dark:bg-[#0B0F19] overflow-hidden lg:overflow-visible">
+      {/* CENTER / RIGHT COLUMN: Container with Floating SIGN IN Card */}
+      <div className="w-full lg:w-[50%] xl:w-[52%] flex-1 flex flex-col items-center justify-center p-3 sm:p-5 lg:p-14 bg-slate-50 dark:bg-[#0B0F19] overflow-hidden lg:overflow-visible">
         
-        {/* Mobile Header Branding - Only visible on mobile devices to save vertical space */}
-        <div className="lg:hidden flex items-center justify-center gap-2 mb-2 sm:mb-3 select-none">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
-            <GraduationCap className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <span className="text-sm font-black text-slate-900 dark:text-white tracking-wider uppercase block leading-none">
-              SMART ACADEMIC
-            </span>
-            <span className="text-[10px] font-medium text-slate-400 block -mt-0.5">
-              Cloud Library Management System
-            </span>
-          </div>
-        </div>
-
-        <div className="w-full max-w-[420px] lg:max-w-[440px] bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-5 sm:p-8 lg:p-10 transition-all">
+        <div className="w-full max-w-[390px] sm:max-w-[420px] lg:max-w-[440px] bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-4 sm:p-6 lg:p-10 transition-all">
           
           {/* VIEW MODE 1: REGULAR PASSWORD SIGN IN (Direct Password Login) */}
           {viewMode === 'signin' && (
@@ -407,7 +463,7 @@ export const LoginPage = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={roleTab === 'admin' ? 'admin@college.com' : 'rahul.cse@cloudlib.edu'}
-                      className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-base sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -443,7 +499,7 @@ export const LoginPage = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full pl-10 pr-10 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all tracking-wider"
+                      className="w-full pl-10 pr-10 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-base sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all tracking-wider"
                     />
                     <button
                       type="button"
@@ -567,7 +623,7 @@ export const LoginPage = () => {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         placeholder="e.g. admin@college.com or rahul.cse@cloudlib.edu"
-                        className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 sm:py-3 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-base sm:text-sm rounded-xl border-0 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                       />
                     </div>
                   </div>
@@ -676,7 +732,7 @@ export const LoginPage = () => {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="At least 6 characters"
-                          className="w-full pl-10 pr-10 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full pl-10 pr-10 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-base sm:text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <button
                           type="button"
@@ -702,7 +758,7 @@ export const LoginPage = () => {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Re-enter new password"
-                          className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-[#eef2f6] dark:bg-slate-800/90 text-slate-900 dark:text-white text-base sm:text-xs rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
@@ -745,8 +801,8 @@ export const LoginPage = () => {
             </div>
           )}
 
-          {/* Bottom Security / Cloud Status */}
-          <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+          {/* Bottom Security / Cloud Status (Visible on desktop inside card) */}
+          <div className="hidden lg:flex mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Live Supabase Cloud Connected
@@ -754,6 +810,12 @@ export const LoginPage = () => {
             <span>Vercel Serverless Edge</span>
           </div>
         </div>
+      </div>
+
+      {/* MOBILE ONLY: Bottom Footer Bar with Image Gradient */}
+      <div className="lg:hidden w-full bg-gradient-to-r from-[#1e1b4b] via-[#2e287a] to-[#3730a3] text-white px-4 py-2 flex items-center justify-between text-[10px] text-indigo-200/90 border-t border-indigo-400/20 shrink-0 z-20">
+        <span>&copy; 2026 Academic Suite</span>
+        <span className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] font-mono">Sandbox Instance</span>
       </div>
     </div>
   );

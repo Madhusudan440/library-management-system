@@ -9,6 +9,11 @@
     --brand-accent: #06b6d4;
   }
 
+  html, body {
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     @apply font-sans bg-slate-50 text-slate-800 antialiased dark:bg-[#0B0F19] dark:text-slate-100;
   }
