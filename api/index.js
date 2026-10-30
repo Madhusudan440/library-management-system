@@ -1,6 +1,5 @@
 import app from '../server/app.js';
 
 // Vercel Serverless Function Handler
-export default function handler(req, res) {
-  return app(req, res);
-}
+// Direct export of Express app instance is the officially supported Vercel pattern
+export default app;

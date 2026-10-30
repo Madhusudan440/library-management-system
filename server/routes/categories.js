@@ -1,13 +1,26 @@
 import express from 'express';
 import { authenticateUser, requireAdmin } from '../middleware/auth.js';
-import { inMemoryDb } from '../config/supabase.js';
+import { supabase, isLiveSupabase, inMemoryDb } from '../config/supabase.js';
 
 const router = express.Router();
 
 // 1. Get all categories
 router.get('/', authenticateUser, async (req, res) => {
   try {
-    const categoriesWithCount = inMemoryDb.categories.map(cat => {
+    let categoriesList = inMemoryDb.categories;
+
+    if (isLiveSupabase && supabase) {
+      try {
+        const { data, error } = await supabase.from('categories').select('*');
+        if (!error && data && data.length > 0) {
+          categoriesList = data;
+        }
+      } catch (e) {
+        console.warn('Supabase categories fetch notice:', e.message);
+      }
+    }
+
+    const categoriesWithCount = categoriesList.map(cat => {
       const bookCount = inMemoryDb.books.filter(b => b.category_id === cat.id && !b.is_archived).length;
       return {
         ...cat,
@@ -45,7 +58,16 @@ router.post('/', authenticateUser, requireAdmin, async (req, res) => {
     };
 
     inMemoryDb.categories.push(newCat);
-    inMemoryDb.logAudit(req.user.id, req.user.email, 'CREATE_CATEGORY', 'categories', newCat.id, { name: newCat.name });
+
+    if (isLiveSupabase && supabase) {
+      try {
+        await supabase.from('categories').insert([newCat]);
+      } catch (sbErr) {
+        console.warn('[Supabase Category Sync Warning]:', sbErr.message);
+      }
+    }
+
+    inMemoryDb.logAudit(req.user?.id || 'admin', req.user?.email || 'admin@cloudlib.edu', 'CREATE_CATEGORY', 'categories', newCat.id, { name: newCat.name });
 
     res.status(201).json({ success: true, message: 'Category created.', category: newCat });
   } catch (err) {
@@ -71,7 +93,16 @@ router.delete('/:id', authenticateUser, requireAdmin, async (req, res) => {
     }
 
     inMemoryDb.categories.splice(index, 1);
-    inMemoryDb.logAudit(req.user.id, req.user.email, 'DELETE_CATEGORY', 'categories', cat.id, { name: cat.name });
+
+    if (isLiveSupabase && supabase) {
+      try {
+        await supabase.from('categories').delete().eq('id', req.params.id);
+      } catch (sbErr) {
+        console.warn('[Supabase Category Delete Warning]:', sbErr.message);
+      }
+    }
+
+    inMemoryDb.logAudit(req.user?.id || 'admin', req.user?.email || 'admin@cloudlib.edu', 'DELETE_CATEGORY', 'categories', cat.id, { name: cat.name });
 
     res.json({ success: true, message: `Category "${cat.name}" deleted.` });
   } catch (err) {

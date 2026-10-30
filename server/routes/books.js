@@ -1,27 +1,74 @@
 import express from 'express';
 import { authenticateUser, requireAdmin } from '../middleware/auth.js';
-import { supabase, isLiveSupabase, inMemoryDb } from '../config/supabase.js';
+import { supabase, isLiveSupabase, inMemoryDb, autoSeedSupabase } from '../config/supabase.js';
 
 const router = express.Router();
 
+// Helper to filter and paginate in-memory books
+function getFilteredInMemoryBooks({ search, category, availability, sortBy, sortOrder, pageNum, limitNum }) {
+  const offset = (pageNum - 1) * limitNum;
+  let filtered = inMemoryDb.books.filter(b => !b.is_archived);
+
+  if (category) {
+    filtered = filtered.filter(b => b.category_id === category || b.category_name?.toLowerCase() === category.toLowerCase());
+  }
+
+  if (availability === 'available') {
+    filtered = filtered.filter(b => b.available_copies > 0);
+  } else if (availability === 'out_of_stock') {
+    filtered = filtered.filter(b => b.available_copies === 0);
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(b =>
+      b.title?.toLowerCase().includes(q) ||
+      b.author?.toLowerCase().includes(q) ||
+      b.isbn?.toLowerCase().includes(q) ||
+      b.publisher?.toLowerCase().includes(q)
+    );
+  }
+
+  filtered.sort((a, b) => {
+    let valA = a[sortBy] ?? '';
+    let valB = b[sortBy] ?? '';
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const total = filtered.length;
+  const paginated = filtered.slice(offset, offset + limitNum);
+
+  return {
+    books: paginated,
+    total,
+    page: pageNum,
+    totalPages: Math.ceil(total / limitNum) || 1,
+  };
+}
+
 // 1. Get books with multi-field search, filters, sorting & pagination
 router.get('/', authenticateUser, async (req, res) => {
-  try {
-    const {
-      search = '',
-      category = '',
-      availability = 'all', // all, available, out_of_stock
-      sortBy = 'title',     // title, publication_year, available_copies, created_at
-      sortOrder = 'asc',    // asc, desc
-      page = 1,
-      limit = 10,
-    } = req.query;
+  const {
+    search = '',
+    category = '',
+    availability = 'all', // all, available, out_of_stock
+    sortBy = 'title',     // title, publication_year, available_copies, created_at
+    sortOrder = 'asc',    // asc, desc
+    page = 1,
+    limit = 10,
+  } = req.query;
 
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 10;
-    const offset = (pageNum - 1) * limitNum;
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const offset = (pageNum - 1) * limitNum;
 
-    if (isLiveSupabase) {
+  // Attempt to query Supabase if configured
+  if (isLiveSupabase && supabase) {
+    try {
       let query = supabase
         .from('books')
         .select('*', { count: 'exact' })
@@ -44,60 +91,53 @@ router.get('/', authenticateUser, async (req, res) => {
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
       query = query.range(offset, offset + limitNum - 1);
 
-      const { data: books, count, error } = await query;
-      if (error) throw error;
+      let { data: books, count, error } = await query;
 
-      return res.json({
-        success: true,
-        books: books || [],
-        total: count || 0,
-        page: pageNum,
-        totalPages: Math.ceil((count || 0) / limitNum),
-      });
+      // If Supabase returned zero books and no filter is active, attempt auto-seed
+      if (!error && (!books || books.length === 0) && !search && !category && availability === 'all') {
+        const seeded = await autoSeedSupabase();
+        if (seeded) {
+          const retry = await query;
+          books = retry.data || [];
+          count = retry.count || books.length;
+        }
+      }
+
+      if (!error && books && books.length > 0) {
+        return res.json({
+          success: true,
+          books,
+          total: count || books.length,
+          page: pageNum,
+          totalPages: Math.ceil((count || books.length) / limitNum) || 1,
+          source: 'supabase',
+        });
+      }
+
+      if (error) {
+        console.warn('[Supabase Books Notice] Query error, falling back to local catalog:', error.message);
+      }
+    } catch (err) {
+      console.warn('[Supabase Books Warning] Supabase unreachable, serving from local catalog:', err.message);
     }
+  }
 
-    // In-Memory store filtering
-    let filtered = inMemoryDb.books.filter(b => !b.is_archived);
-
-    if (category) {
-      filtered = filtered.filter(b => b.category_id === category || b.category_name?.toLowerCase() === category.toLowerCase());
-    }
-
-    if (availability === 'available') {
-      filtered = filtered.filter(b => b.available_copies > 0);
-    } else if (availability === 'out_of_stock') {
-      filtered = filtered.filter(b => b.available_copies === 0);
-    }
-
-    if (search) {
-      const q = search.toLowerCase();
-      filtered = filtered.filter(b =>
-        b.title?.toLowerCase().includes(q) ||
-        b.author?.toLowerCase().includes(q) ||
-        b.isbn?.toLowerCase().includes(q) ||
-        b.publisher?.toLowerCase().includes(q)
-      );
-    }
-
-    filtered.sort((a, b) => {
-      let valA = a[sortBy] ?? '';
-      let valB = b[sortBy] ?? '';
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+  // Fallback to built-in verified database
+  try {
+    const result = getFilteredInMemoryBooks({
+      search,
+      category,
+      availability,
+      sortBy,
+      sortOrder,
+      pageNum,
+      limitNum,
     });
-
-    const total = filtered.length;
-    const paginated = filtered.slice(offset, offset + limitNum);
 
     res.json({
       success: true,
-      books: paginated,
-      total,
-      page: pageNum,
-      totalPages: Math.ceil(total / limitNum),
+      ...result,
+      source: 'local_database',
     });
   } catch (err) {
     console.error('Fetch books error:', err);
@@ -107,13 +147,29 @@ router.get('/', authenticateUser, async (req, res) => {
 
 // 2. Get popular books based on loan frequency
 router.get('/popular', authenticateUser, async (req, res) => {
+  if (isLiveSupabase && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('is_archived', false)
+        .order('issued_copies', { ascending: false })
+        .limit(5);
+
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, books: data, source: 'supabase' });
+      }
+    } catch (e) {
+      console.warn('Popular books Supabase fallback:', e.message);
+    }
+  }
+
   try {
-    // Sort books by issued_copies or loan history
     const books = [...inMemoryDb.books]
       .filter(b => !b.is_archived)
-      .sort((a, b) => b.issued_copies - a.issued_copies)
+      .sort((a, b) => (b.issued_copies || 0) - (a.issued_copies || 0))
       .slice(0, 5);
-    res.json({ success: true, books });
+    res.json({ success: true, books, source: 'local_database' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to retrieve popular books.' });
   }
@@ -121,12 +177,29 @@ router.get('/popular', authenticateUser, async (req, res) => {
 
 // 3. Get recently added books
 router.get('/recent', authenticateUser, async (req, res) => {
+  if (isLiveSupabase && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('is_archived', false)
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, books: data, source: 'supabase' });
+      }
+    } catch (e) {
+      console.warn('Recent books Supabase fallback:', e.message);
+    }
+  }
+
   try {
     const books = [...inMemoryDb.books]
       .filter(b => !b.is_archived)
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 6);
-    res.json({ success: true, books });
+    res.json({ success: true, books, source: 'local_database' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to retrieve recent books.' });
   }
@@ -135,19 +208,35 @@ router.get('/recent', authenticateUser, async (req, res) => {
 // 4. Export filtered book list to CSV format
 router.get('/export-csv', authenticateUser, async (req, res) => {
   try {
-    const books = inMemoryDb.books.filter(b => !b.is_archived);
+    let books = [];
+    if (isLiveSupabase && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('books')
+          .select('*')
+          .eq('is_archived', false);
+        if (!error && data && data.length > 0) {
+          books = data;
+        }
+      } catch (_) {}
+    }
+
+    if (books.length === 0) {
+      books = inMemoryDb.books.filter(b => !b.is_archived);
+    }
+
     const headers = ['ISBN', 'Title', 'Author', 'Publisher', 'Year', 'Category', 'Total Copies', 'Available', 'Issued', 'Reserved'];
     const rows = books.map(b => [
       `"${b.isbn}"`,
-      `"${b.title.replace(/"/g, '""')}"`,
-      `"${b.author.replace(/"/g, '""')}"`,
+      `"${(b.title || '').replace(/"/g, '""')}"`,
+      `"${(b.author || '').replace(/"/g, '""')}"`,
       `"${b.publisher || ''}"`,
-      b.publication_year,
+      b.publication_year || '',
       `"${b.category_name || ''}"`,
-      b.total_copies,
-      b.available_copies,
-      b.issued_copies,
-      b.reserved_copies,
+      b.total_copies ?? 1,
+      b.available_copies ?? 1,
+      b.issued_copies ?? 0,
+      b.reserved_copies ?? 0,
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -162,13 +251,55 @@ router.get('/export-csv', authenticateUser, async (req, res) => {
 // 5. Get single book details with copies and reservation count
 router.get('/:id', authenticateUser, async (req, res) => {
   try {
-    const book = inMemoryDb.books.find(b => b.id === req.params.id);
+    let book = null;
+    let copies = [];
+    let reservations = [];
+
+    // Query Supabase if active
+    if (isLiveSupabase && supabase) {
+      try {
+        const { data: sbBook, error: bookErr } = await supabase
+          .from('books')
+          .select('*')
+          .eq('id', req.params.id)
+          .maybeSingle();
+
+        if (!bookErr && sbBook) {
+          book = sbBook;
+          const { data: sbCopies } = await supabase
+            .from('book_copies')
+            .select('*')
+            .eq('book_id', req.params.id);
+          copies = sbCopies || [];
+
+          const { count: resCount } = await supabase
+            .from('reservations')
+            .select('*', { count: 'exact', head: true })
+            .eq('book_id', req.params.id)
+            .eq('status', 'pending');
+
+          return res.json({
+            success: true,
+            book: {
+              ...book,
+              copies,
+              activeReservationsCount: resCount || 0,
+            },
+          });
+        }
+      } catch (sbErr) {
+        console.warn('Supabase book detail fallback:', sbErr.message);
+      }
+    }
+
+    // Fallback to in-memory store
+    book = inMemoryDb.books.find(b => b.id === req.params.id);
     if (!book) {
       return res.status(404).json({ success: false, message: 'Book not found.' });
     }
 
-    const copies = inMemoryDb.copies.filter(c => c.book_id === book.id);
-    const reservations = inMemoryDb.reservations.filter(r => r.book_id === book.id && r.status === 'pending');
+    copies = inMemoryDb.copies.filter(c => c.book_id === book.id);
+    reservations = inMemoryDb.reservations.filter(r => r.book_id === book.id && r.status === 'pending');
 
     res.json({
       success: true,
@@ -176,7 +307,7 @@ router.get('/:id', authenticateUser, async (req, res) => {
         ...book,
         copies,
         activeReservationsCount: reservations.length,
-      }
+      },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error retrieving book.' });
@@ -205,7 +336,7 @@ router.post('/', authenticateUser, requireAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'ISBN, title, and author are required.' });
     }
 
-    // Duplicate ISBN check
+    // Duplicate ISBN check (local memory + live Supabase)
     const existing = inMemoryDb.books.find(b => b.isbn?.trim().toLowerCase() === isbn.trim().toLowerCase());
     if (existing) {
       return res.status(409).json({ success: false, message: `A book with ISBN ${isbn} already exists: "${existing.title}".` });
@@ -240,8 +371,9 @@ router.post('/', authenticateUser, requireAdmin, async (req, res) => {
     inMemoryDb.books.unshift(newBook);
 
     // Generate barcoded physical copy records
+    const generatedCopies = [];
     for (let i = 1; i <= numCopies; i++) {
-      inMemoryDb.copies.push({
+      const copyRecord = {
         id: `copy-${newBook.id}-${i}`,
         book_id: newBook.id,
         barcode: `BAR-${newBook.isbn.replace(/[^a-zA-Z0-9]/g, '').slice(-6)}-${i.toString().padStart(2, '0')}`,
@@ -249,12 +381,24 @@ router.post('/', authenticateUser, requireAdmin, async (req, res) => {
         status: 'available',
         condition: 'good',
         created_at: new Date().toISOString(),
-      });
+      };
+      inMemoryDb.copies.push(copyRecord);
+      generatedCopies.push(copyRecord);
+    }
+
+    // Persist to Supabase if live
+    if (isLiveSupabase && supabase) {
+      try {
+        await supabase.from('books').insert([newBook]);
+        await supabase.from('book_copies').insert(generatedCopies);
+      } catch (sbErr) {
+        console.warn('[Supabase Sync Warning] Could not persist created book to Supabase:', sbErr.message);
+      }
     }
 
     inMemoryDb.logAudit(
-      req.user.id,
-      req.user.email,
+      req.user?.id || 'admin',
+      req.user?.email || 'admin@cloudlib.edu',
       'CREATE_BOOK',
       'books',
       newBook.id,
@@ -328,9 +472,36 @@ router.put('/:id', authenticateUser, requireAdmin, async (req, res) => {
 
     book.updated_at = new Date().toISOString();
 
+    // Persist to Supabase if live
+    if (isLiveSupabase && supabase) {
+      try {
+        await supabase
+          .from('books')
+          .update({
+            title: book.title,
+            author: book.author,
+            publisher: book.publisher,
+            publication_year: book.publication_year,
+            category_id: book.category_id,
+            category_name: book.category_name,
+            description: book.description,
+            cover_url: book.cover_url,
+            edition: book.edition,
+            pages: book.pages,
+            shelf_location: book.shelf_location,
+            total_copies: book.total_copies,
+            available_copies: book.available_copies,
+            updated_at: book.updated_at,
+          })
+          .eq('id', book.id);
+      } catch (sbErr) {
+        console.warn('[Supabase Sync Warning] Could not persist book update:', sbErr.message);
+      }
+    }
+
     inMemoryDb.logAudit(
-      req.user.id,
-      req.user.email,
+      req.user?.id || 'admin',
+      req.user?.email || 'admin@cloudlib.edu',
       'UPDATE_BOOK',
       'books',
       book.id,
@@ -363,9 +534,18 @@ router.delete('/:id', authenticateUser, requireAdmin, async (req, res) => {
 
     inMemoryDb.books.splice(bookIndex, 1);
 
+    // Delete or mark archived in Supabase if live
+    if (isLiveSupabase && supabase) {
+      try {
+        await supabase.from('books').delete().eq('id', req.params.id);
+      } catch (sbErr) {
+        console.warn('[Supabase Sync Warning] Could not delete book from Supabase:', sbErr.message);
+      }
+    }
+
     inMemoryDb.logAudit(
-      req.user.id,
-      req.user.email,
+      req.user?.id || 'admin',
+      req.user?.email || 'admin@cloudlib.edu',
       'DELETE_BOOK',
       'books',
       book.id,
@@ -394,6 +574,7 @@ router.post('/import-csv', authenticateUser, requireAdmin, async (req, res) => {
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
     let importedCount = 0;
     const errors = [];
+    const newBooksBatch = [];
 
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
@@ -441,12 +622,22 @@ router.post('/import-csv', authenticateUser, requireAdmin, async (req, res) => {
       };
 
       inMemoryDb.books.unshift(newBook);
+      newBooksBatch.push(newBook);
       importedCount++;
     }
 
+    // Persist batch to Supabase if live
+    if (isLiveSupabase && supabase && newBooksBatch.length > 0) {
+      try {
+        await supabase.from('books').upsert(newBooksBatch, { onConflict: 'isbn' });
+      } catch (sbErr) {
+        console.warn('[Supabase Sync Warning] Could not persist batch CSV to Supabase:', sbErr.message);
+      }
+    }
+
     inMemoryDb.logAudit(
-      req.user.id,
-      req.user.email,
+      req.user?.id || 'admin',
+      req.user?.email || 'admin@cloudlib.edu',
       'IMPORT_CSV',
       'books',
       'batch',

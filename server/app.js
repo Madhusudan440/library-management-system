@@ -21,6 +21,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
+// Vercel Serverless Function Rewrite Normalization Middleware
+// Ensures req.url matches the actual route even when rewritten to /api/index.js
+app.use((req, res, next) => {
+  const matchedPath = req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'];
+  if (matchedPath && (req.url.startsWith('/api/index.js') || req.url === '/api' || req.url === '/api/')) {
+    const queryIndex = req.url.indexOf('?');
+    const queryString = queryIndex !== -1 ? req.url.slice(queryIndex) : '';
+    const cleanMatched = matchedPath.split('?')[0];
+    req.url = cleanMatched + queryString;
+  } else if (req.url.startsWith('/api/index.js')) {
+    req.url = req.url.replace('/api/index.js', '') || '/';
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
